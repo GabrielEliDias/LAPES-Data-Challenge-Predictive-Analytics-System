@@ -1,0 +1,21 @@
+# Cache e bytecode do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Checkpoints de notebooks
+.ipynb_checkpoints/
+
+# Ambientes virtuais
+.venv/
+env/
+venv/
+
+# Arquivos ocultos e do sistema
+.git/
+.idea/
+.DS_Store
+
+# Dados que não devem estar na imagem
+data/
+models/
