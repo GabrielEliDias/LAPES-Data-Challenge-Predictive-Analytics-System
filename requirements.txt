@@ -1,0 +1,14 @@
+#Básico
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+jupyter
+#Deep learning
+torch
+tensorflow
+#Dashboard
+streamlit
+plotly
+dash
