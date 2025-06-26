@@ -6,8 +6,8 @@ seaborn
 scikit-learn
 jupyter
 #Deep learning
-torch
-tensorflow
+# torch
+# tensorflow
 #Dashboard
 streamlit
 plotly

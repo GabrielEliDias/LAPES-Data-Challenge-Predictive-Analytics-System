@@ -10,11 +10,21 @@ dist/
 # Virtual environments
 venv/
 .env/
+pyvenv.cfg
+pip/
+Scripts/
+share/
+etc/
+
+#git workflow
+GIT_WORKFLOW.MD
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
 # OS-specific
+Microsoft/
+settings.json
 .DS_Store
 Thumbs.db
 
@@ -38,4 +48,4 @@ docker/
 .vscode/
 .idea/
 
-.Lib
+Lib/
