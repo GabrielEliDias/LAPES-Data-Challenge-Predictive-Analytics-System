@@ -1,0 +1,41 @@
+# Python cache / build files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+venv/
+.env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Data - to avoid committing big datasets
+data/bronze/
+data/silver/
+data/gold/
+data/diamond/
+
+# Models - to avoid committing large trained model files
+models/
+
+# Docker
+*.dockerfile
+docker/
+
+# Logs
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+.Lib
