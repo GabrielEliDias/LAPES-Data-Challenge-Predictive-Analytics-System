@@ -5,6 +5,7 @@ matplotlib
 seaborn
 scikit-learn
 jupyter
+pathlib
 #Deep learning
 # torch
 # tensorflow
