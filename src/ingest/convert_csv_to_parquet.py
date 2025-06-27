@@ -13,5 +13,3 @@ def convert_csv_to_parquet(input_csv_path: str, output_parquet_path: str):
     df.to_parquet(parquet_path, index=False, engine="pyarrow")
 
     print(f"Arquivo convertido de CSV para Parquet: {parquet_path}")
-
-
