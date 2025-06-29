@@ -36,6 +36,6 @@ def bronze_to_silver(path_bronze : str, path_silver : str):
     X = df.drop("class", axis=1)
     y = df["class"]
 
-    #Salvando os dados na camada silver
+    # Salvando os dados na camada silver
     df.to_parquet(path_silver, index=False)
     print(f"Arquivo convertido de CSV para Parquet: {path_silver}")
