@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 
+
 def prepare_gold_data(silver_path: str, gold_dir: str):
     # Carregar os dados da camada Silver
     df = pd.read_parquet(silver_path)
