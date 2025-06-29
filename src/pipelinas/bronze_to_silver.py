@@ -1,4 +1,4 @@
-#Bronze para silver, tratamento de dados brutos
+# Bronze para silver, tratamento de dados brutos
 
 from sklearn.preprocessing import RobustScaler
 import pandas as pd
