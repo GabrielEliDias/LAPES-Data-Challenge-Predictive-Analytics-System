@@ -26,8 +26,9 @@ def bronze_to_silver(path_bronze: str, path_silver: str):
     df.to_parquet(path_silver, index=False)
     print(f"Arquivo convertido de CSV para Parquet: {path_silver}")
 
+
 if __name__ == "__main__":
-    bronze_path = Path.cwd().parent.parent / 'data' / 'bronze' / 'creditcard.csv'
-    silver_path = Path.cwd().parent.parent / 'data' / 'silver' / 'creditcard_fraud_cleaned.parquet'
+    bronze_path = Path.cwd() / 'data' / 'bronze' / 'creditcard.csv'
+    silver_path = Path.cwd() / 'data' / 'silver' / 'creditcard_fraud_cleaned.parquet'
 
     bronze_to_silver(bronze_path, silver_path)
