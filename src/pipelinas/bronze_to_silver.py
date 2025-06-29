@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 
 
-def bronze_to_silver(path_bronze : str, path_silver : str):
+def bronze_to_silver(path_bronze: str, path_silver: str):
     parquet_bronze = Path(path_bronze)
     parquet_silver = Path(path_silver)
 
