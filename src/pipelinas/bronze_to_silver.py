@@ -32,10 +32,6 @@ def bronze_to_silver(path_bronze : str, path_silver : str):
     # Randomização da tabela e seus valores
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    # Separação de X e Y
-    X = df.drop("class", axis=1)
-    y = df["class"]
-
     # Salvando os dados na camada silver
     df.to_parquet(path_silver, index=False)
     print(f"Arquivo convertido de CSV para Parquet: {path_silver}")
