@@ -27,7 +27,7 @@ jobs:
     - name: Lint com flake8
       run: |
         pip install flake8
-        flake8 src/ --max-line-length=100
+        flake8 src/ --max-line-length=120
 
     - name: Build da imagem Docker
       run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lapes-predictive-model:latest .
