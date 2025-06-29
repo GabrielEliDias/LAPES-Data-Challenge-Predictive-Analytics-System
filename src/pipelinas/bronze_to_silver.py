@@ -16,6 +16,7 @@ def bronze_to_silver(path_bronze: str, path_silver: str):
 
     # começando o tratamento de dados: retirando duplicatas e removendo nulos
     df.drop_duplicates(inplace=True)
+    # Esse comando é defensivo, visto que durante a EDA não foram encontrados nulos
     df.dropna(subset=df.columns.tolist(), inplace=True)
 
     # Ajustando as colunas em snake case
