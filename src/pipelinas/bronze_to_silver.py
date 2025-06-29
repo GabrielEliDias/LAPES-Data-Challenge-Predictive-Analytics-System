@@ -5,14 +5,14 @@ from pathlib import Path
 
 
 def bronze_to_silver(path_bronze: str, path_silver: str):
-    parquet_bronze = Path(path_bronze)
+    raw_csv_bronze = Path(path_bronze)
     parquet_silver = Path(path_silver)
 
     # caso não exista o path do silver ele cria.
     parquet_silver.parent.mkdir(parents=True, exist_ok=True)
 
     # Ele vai ler e criar uma cópia na memória e modifica ela
-    df = pd.read_parquet(parquet_bronze)
+    df = pd.read_csv(raw_csv_bronze)
 
     # começando o tratamento de dados: retirando duplicatas e removendo nulos
     df.drop_duplicates(inplace=True)
@@ -25,3 +25,9 @@ def bronze_to_silver(path_bronze: str, path_silver: str):
     # Salvando os dados na camada silver
     df.to_parquet(path_silver, index=False)
     print(f"Arquivo convertido de CSV para Parquet: {path_silver}")
+
+if __name__ == "__main__":
+    bronze_path = Path.cwd().parent.parent / 'data' / 'bronze' / 'creditcard.csv'
+    silver_path = Path.cwd().parent.parent / 'data' / 'silver' / 'creditcard_fraud_cleaned.parquet'
+
+    bronze_to_silver(bronze_path, silver_path)
