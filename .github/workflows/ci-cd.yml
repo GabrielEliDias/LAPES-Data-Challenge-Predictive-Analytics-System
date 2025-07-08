@@ -2,15 +2,156 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches:
+      - '**'
+      - '!main'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+  pull_request_target:
+    types: [ opened, synchronize, reopened ]
+
+env:
+  IMAGE_NAME: lapes-predictive-model
 
 jobs:
-  build-test-and-docker:
+  Project-Lapes-ML:
+    name: Check Commit Message
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
 
     steps:
+    - name: Extract branch name
+      id: extract
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        echo "branch=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "Verificando branch: $BRANCH_NAME"
+
+    - name: Validate branch name
+      id: validate
+      run: | 
+        BRANCH_NAME="${{ steps.extract.outputs.branch }}"
+        echo "Branch name: $BRANCH_NAME"
+
+        # good pattern:
+        # feature/...
+        # hotfix/...
+        # bugfix/...
+        # release/...
+
+        if [[ $BRANCH_NAME =~ ^(feature|hotfix|bugfix)\/[A-Z]+-[0-9]+-[a-z0-9-]+$ ]]; then
+          echo " Branch name follows pattern: $BRANCH_NAME"
+          echo "valid=true" >> $GITHUB_OUTPUT
+          echo "type=development" >> $GITHUB_OUTPUT
+        elif [[ $BRANCH_NAME =~ ^release\/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo " Release branch follows pattern: $BRANCH_NAME"
+          echo "valid=true" >> $GITHUB_OUTPUT
+          echo "type=release" >> $GITHUB_OUTPUT
+        else
+          echo " Branch name does not follow pattern: $BRANCH_NAME"
+          echo "valid=false" >> $GITHUB_OUTPUT
+          echo "type=invalid" >> $GITHUB_OUTPUT
+        fi
+    - name: comment branch validation failure
+      if: steps.validate.outputs.valid == 'false'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const branchName = '${{ steps.extract.outputs.branch }}';
+          
+          const comment = `## name of  the Branch is Invalid
+          
+          The branch \`${branchName}\` is invalid by the pattern.
+          
+          ### Good pattern:
+          
+          ##for development:##
+          - \`feature/\` - new feature
+          - \`bugfix/\` - resolved bugs
+          - \`hotfix/\` - resolved urgent bugs
+          
+          ##for releases:##
+          - \`release/v1.x.x\` - Branch release
+          
+          ### valid exemples:
+          - \`feature/LAPES-001-add-prediction-model\`
+          - \`bugfix/LAPES-042-fix-data-validation\`
+          - \`hotfix/LAPES-099-critical-security-fix\`
+          
+          ### how to fix:
+          \`\`\`bash
+          git branch -m ${branchName} feature/TASK-XXX
+          git push origin -u feature/TASK-XXX
+          git push origin --delete ${branchName}
+          \`\`\`
+          
+          ---
+          *Auto verification realised on: ${new Date().toISOString()}*`;
+          
+          // create an issue for report of the problem
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Branch with name invalid: ${branchName}`,
+            body: comment,
+            labels: ['invalid-branch', 'needs-fix']
+          });
+
+    - name: Fail if branch is invalid
+      if: steps.validate.outputs.valid == 'false'
+      run: |
+        echo "Pipeline is over by the name of the branch"
+        echo "Please, rename the branch with the correct pattern!"
+        exit 1
+
+    - name: Validate Commit Messages
+      uses: wagoid/commitlint-github-action@v5
+      with:
+        configFile: '.commitlintrc.json'
+        failOnWarnings: false
+        helpURL: 'https://github.com/conventional-changelog/commitlint/#what-is-commitlint'
+
+    - name: Generate Commit Stats
+      id: commit-stats
+      run: |
+        # Análise rápida com uma linha
+        git log --oneline --no-merges origin/main..HEAD | \
+        awk '{if($2~/^feat/) feat++; else if($2~/^fix/) fix++; else other++} 
+             END {print "feat="feat; print "fix="fix; print "other="other}' >> $GITHUB_OUTPUT
+
+    - name: Auto Comment on Issues
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const stats = {
+            feat: '${{ steps.commit-stats.outputs.feat }}' || 0,
+            fix: '${{ steps.commit-stats.outputs.fix }}' || 0,
+            other: '${{ steps.commit-stats.outputs.other }}' || 0
+          };
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Commit validation failed: ${context.ref}`,
+            body: `## Commit Validation Failed
+            
+            **Stats:** ${stats.feat} features, ${stats.fix} fixes, ${stats.other} others
+            
+            **Fix:** Use conventional commits: \`feat: description\`, \`fix: description\`
+            
+            **Examples:**
+            - \`feat: add user authentication\`
+            - \`fix: resolve login bug\`
+            - \`docs: update README\``,
+            labels: ['invalid-commits']
+          });
+
+
     - name: Checkout do código
       uses: actions/checkout@v3
 
@@ -19,24 +160,115 @@ jobs:
       with:
         python-version: '3.9'
 
-    - name: Instalar dependências
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        
 
-    - name: Lint com flake8
+    - name: Lint with flake8
       run: |
         pip install flake8
         flake8 src/ --max-line-length=200
 
-    - name: Build da imagem Docker
+    - name: Build on imagem Docker
       run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lapes-predictive-model:latest .
 
-    - name: Login no Docker Hub
+    - name: Login on Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Push da imagem para Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/lapes-predictive-model:latest
+    - name: Push image to the Docker Hub
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/${{env.IMAGE_NAME }}:latest
+
+    - name: Create a Pull Request Automatic
+      if: steps.validate.outputs.valid == 'true' && github.event_name == 'push'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const branchName = '${{ steps.extract.outputs.branch }}';
+          const branchType = '${{ steps.validate.outputs.type }}';
+          
+          // Verify if already exists PR for this branch
+          const existingPRs = await github.rest.pulls.list({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            head: `${context.repo.owner}:${branchName}`,
+            state: 'open'
+          });
+          
+          if (existingPRs.data.length > 0) {
+            console.log(`PR already exists for branch ${branchName}`);
+            return;
+          }
+          
+          // Write a title and a body for the branch
+          let title, body;
+          
+          if (branchType === 'development') {
+            const parts = branchName.split('/')[1].split('-');
+            const taskId = `${parts[0]}-${parts[1]}`;
+            const description = parts.slice(2).join(' ').replace(/-/g, ' ');
+            
+            title = `[${taskId}] ${description}`;
+            body = `## description
+            
+            This PR implements: ${description}
+            ---
+            *PR automatically created after verification of all tests*
+            
+            **Task ID:** ${taskId}`;
+          } else if (branchType === 'release') {
+            const version = branchName.split('/')[1];
+            title = `Release ${version}`;
+            body = `## Release ${version}
+            
+            ### Checklist for Release:
+            - [x] Verification of commits and branchs names
+            - [x] All tests passed
+            - [x] documentation update
+            - [x] Image Docker updated
+            
+            ---
+            *PR of release automatic created*`;
+          }
+          
+          // Start the Pull Request
+          const pr = await github.rest.pulls.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            head: branchName,
+            base: 'main',
+            body: body,
+            draft: false
+          });
+          
+          console.log(`Pull Request on github: ${pr.data.html_url}`);
+          
+          // Add labels at the type
+          const labels = branchType === 'development' 
+            ? ['enhancement', 'ready-for-review'] 
+            : ['release', 'ready-for-review'];
+            
+          await github.rest.issues.addLabels({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr.data.number,
+            labels: labels
+          });
+
+    - name: notify success
+      if: success()
+      run: |
+        echo "Pipeline executed successfully!"
+
+    - name: notify failure
+      if: failure()
+      run: |
+        echo "Pipeline failed!"
+        echo "Check the logs above to identify the problem"
+        exit 1
