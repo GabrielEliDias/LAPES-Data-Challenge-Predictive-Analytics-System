@@ -65,12 +65,12 @@ jobs:
           
           ### Good pattern:
           
-          **for development:**
+          ##for development:##
           - \`feature/` - new feature
           - \`bugfix/` - resolved bugs
           - \`hotfix/` - resolved urgent bugs
           
-          **for releases:**
+          ##for releases:##
           - \`release/v1.x.x\` - Branch release
           
           ### valid exemples:
