@@ -17,6 +17,10 @@ jobs:
     name: Check Commit Message
     runs-on: ubuntu-latest
 
+    permissions:
+      issues: write
+      pull-requests: write
+
     steps:
     - name: Extract branch name
       id: extract
