@@ -30,7 +30,7 @@ jobs:
     - name: Validate branch name
       id: validate
       run: | 
-        BRANCH_NAME = "${{ steps.extract.outputs.branch }}
+        BRANCH_NAME="${{ steps.extract.outputs.branch }}"
         echo "Branch name: $BRANCH_NAME"
 
         # good pattern:
@@ -56,7 +56,7 @@ jobs:
       if: steps.validate.outputs.valid == 'false'
       uses: actions/github-script@v6
       with:
-        script:
+        script: |
           const branchName = '${{ steps.extract.outputs.branch }}';
           
           const comment = `## name of  the Branch is Invalid
@@ -66,9 +66,9 @@ jobs:
           ### Good pattern:
           
           ##for development:##
-          - \`feature/` - new feature
-          - \`bugfix/` - resolved bugs
-          - \`hotfix/` - resolved urgent bugs
+          - \`feature/\` - new feature
+          - \`bugfix/\` - resolved bugs
+          - \`hotfix/\` - resolved urgent bugs
           
           ##for releases:##
           - \`release/v1.x.x\` - Branch release
@@ -92,7 +92,7 @@ jobs:
           await github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: "Branch with name invalid: ${branchName}"
+            title: `Branch with name invalid: ${branchName}`,
             body: comment,
             labels: ['invalid-branch', 'needs-fix']
           });
