@@ -8,6 +8,8 @@ on:
   pull_request:
     branches:
       - main
+  pull_request_target:
+    types: [ opened, synchronize, reopened ]
 
 env:
   IMAGE_NAME: lapes-predictive-model
@@ -16,10 +18,10 @@ jobs:
   Project-Lapes-ML:
     name: Check Commit Message
     runs-on: ubuntu-latest
-
     permissions:
       issues: write
       pull-requests: write
+      contents: write
 
     steps:
     - name: Extract branch name
