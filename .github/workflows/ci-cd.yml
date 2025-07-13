@@ -70,9 +70,9 @@ jobs:
           ### Good pattern:
           
           ##for development:##
-          - \`feature/\` - new feature
-          - \`bugfix/\` - resolved bugs
-          - \`hotfix/\` - resolved urgent bugs
+          - \`feature/\XXX-000-nome-em-minuscula` - new feature
+          - \`bugfix/\XXX-000-nome-em-minuscula` - resolved bugs
+          - \`hotfix/\XXX-000-nome-em-minuscula` - resolved urgent bugs
           
           ##for releases:##
           - \`release/v1.x.x\` - Branch release
@@ -183,82 +183,89 @@ jobs:
     - name: Push image to the Docker Hub
       run: docker push ${{ secrets.DOCKER_USERNAME }}/${{env.IMAGE_NAME }}:latest
 
-    - name: Create a Pull Request Automatic
+    - name: Cria Pull Request automaticamente com verificação
       if: steps.validate.outputs.valid == 'true' && github.event_name == 'push'
       uses: actions/github-script@v6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const branchName = '${{ steps.extract.outputs.branch }}';
+          const base = 'main';
+          const head = '${{ steps.extract.outputs.branch }}';
           const branchType = '${{ steps.validate.outputs.type }}';
-          
-          // Verify if already exists PR for this branch
+
+          const compare = await github.rest.repos.compareCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            base,
+            head,
+          });
+
+          if (compare.status !== 200 || compare.data.total_commits === 0) {
+            core.info("ℹ️ Nenhuma diferença entre os branches. PR não será criada.");
+            return;
+          }
+
           const existingPRs = await github.rest.pulls.list({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            head: `${context.repo.owner}:${branchName}`,
+            head: `${context.repo.owner}:${head}`,
             state: 'open'
           });
-          
+
           if (existingPRs.data.length > 0) {
-            console.log(`PR already exists for branch ${branchName}`);
+            console.log(`PR already exists for branch ${head}`);
             return;
           }
-          
-          // Write a title and a body for the branch
+
           let title, body;
-          
+
           if (branchType === 'development') {
-            const parts = branchName.split('/')[1].split('-');
+            const parts = head.split('/')[1].split('-');
             const taskId = `${parts[0]}-${parts[1]}`;
             const description = parts.slice(2).join(' ').replace(/-/g, ' ');
-            
+
             title = `[${taskId}] ${description}`;
             body = `## description
-            
-            This PR implements: ${description}
-            ---
-            *PR automatically created after verification of all tests*
-            
-            **Task ID:** ${taskId}`;
-          } else if (branchType === 'release') {
-            const version = branchName.split('/')[1];
-            title = `Release ${version}`;
-            body = `## Release ${version}
-            
-            ### Checklist for Release:
-            - [x] Verification of commits and branchs names
-            - [x] All tests passed
-            - [x] documentation update
-            - [x] Image Docker updated
-            
-            ---
-            *PR of release automatic created*`;
+
+          This PR implements: ${description}
+          ---
+          *PR automatically created after verification of all tests*
+
+          **Task ID:** ${taskId}`;
+            } else if (branchType === 'release') {
+              const version = head.split('/')[1];
+              title = `Release ${version}`;
+              body = `## Release ${version}
+
+          ### Checklist for Release:
+          - [x] Verification of commits and branchs names
+          - [x] All tests passed
+          - [x] documentation update
+          - [x] Image Docker updated
+
+          ---
+          *PR of release automatic created*`;
           }
-          
-          // Start the Pull Request
+
           const pr = await github.rest.pulls.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: title,
-            head: branchName,
-            base: 'main',
-            body: body,
+            title,
+            head,
+            base,
+            body,
             draft: false
           });
-          
-          console.log(`Pull Request on github: ${pr.data.html_url}`);
-          
-          // Add labels at the type
-          const labels = branchType === 'development' 
-            ? ['enhancement', 'ready-for-review'] 
+
+          const labels = branchType === 'development'
+            ? ['enhancement', 'ready-for-review']
             : ['release', 'ready-for-review'];
-            
+
           await github.rest.issues.addLabels({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: pr.data.number,
-            labels: labels
+            labels
           });
 
     - name: notify success
