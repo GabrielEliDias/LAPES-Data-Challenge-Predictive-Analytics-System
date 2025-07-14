@@ -165,7 +165,6 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const base = 'main';
-          const head = '${{ steps.extract.outputs.branch }}';
           const branchType = '${{ steps.validate.outputs.type }}' || 'undefined';
           const head = '${{ steps.extract.outputs.branch }}' || 'unknown-branch';
 
