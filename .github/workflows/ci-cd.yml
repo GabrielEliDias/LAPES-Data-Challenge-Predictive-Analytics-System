@@ -205,7 +205,6 @@ jobs:
             return;
           }
 
-          let title, body;
 
           if (branchType === 'development') {
             const parts = head.split('/')[1].split('-');
