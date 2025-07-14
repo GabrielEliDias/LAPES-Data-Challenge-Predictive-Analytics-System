@@ -21,6 +21,7 @@ def load_data():
     df["class"] = y
     return df, ds
 
+
 df, ds = load_data()
 
 # Métricas em colunas
