@@ -61,36 +61,11 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          const branchName = '${{ steps.extract.outputs.branch }}';
-          
-          const comment = `## name of  the Branch is Invalid
-          
-          The branch \`${branchName}\` is invalid by the pattern.
-          
-          ### Good pattern:
-          
-          ##for development:##
-          - \`feature/\XXX-000-nome-em-minuscula` - new feature
-          - \`bugfix/\XXX-000-nome-em-minuscula` - resolved bugs
-          - \`hotfix/\XXX-000-nome-em-minuscula` - resolved urgent bugs
-          
-          ##for releases:##
-          - \`release/v1.x.x\` - Branch release
-          
-          ### valid exemples:
-          - \`feature/LAPES-001-add-prediction-model\`
-          - \`bugfix/LAPES-042-fix-data-validation\`
-          - \`hotfix/LAPES-099-critical-security-fix\`
-          
-          ### how to fix:
-          \`\`\`bash
-          git branch -m ${branchName} feature/TASK-XXX
-          git push origin -u feature/TASK-XXX
-          git push origin --delete ${branchName}
-          \`\`\`
-          
-          ---
-          *Auto verification realised on: ${new Date().toISOString()}*`;
+          const branchName = '${{ steps.extract.outputs.branch }}' || 'unknown-branch';
+
+          const comment = `## Name of the Branch is Invalid
+          The branch \`${branchName}\` does not follow the required pattern...
+          `;
           
           // create an issue for report of the problem
           await github.rest.issues.create({
@@ -191,7 +166,21 @@ jobs:
         script: |
           const base = 'main';
           const head = '${{ steps.extract.outputs.branch }}';
-          const branchType = '${{ steps.validate.outputs.type }}';
+          const branchType = '${{ steps.validate.outputs.type }}' || 'undefined';
+          const head = '${{ steps.extract.outputs.branch }}' || 'unknown-branch';
+
+          let title = '';
+          let body = '';
+
+          if (branchType === 'development') {
+              title = `Development Branch PR`;
+              body = `This is a PR automatically created for branch: ${head}`;
+          } else if (branchType === 'release') {
+              title = `Release Branch PR`;
+              body = `Release Branch: ${head}`;
+          } else {
+              console.log("Unrecognized branch type.");
+          }
 
           const compare = await github.rest.repos.compareCommits({
             owner: context.repo.owner,
