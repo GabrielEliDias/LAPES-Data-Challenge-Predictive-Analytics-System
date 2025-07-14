@@ -5,12 +5,12 @@ import plotly.express as px
 
 # Configuração da página
 st.set_page_config(
-    page_title="Detecção de Fraudes",
+    page_title="Fraud detection dashboard",
     layout="wide",
 )
 
 # Título
-st.title("Sistema de Detecção de Fraudes com Cartões de Crédito")
+st.title("Fraud detection system on credit card")
 
 # Lê os dados da camada gold
 @st.cache_data
@@ -27,38 +27,38 @@ df, ds = load_data()
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("🔢 Total de transações", len(df))
+    st.metric("🔢 Total transactions", len(df))
 
 with col2:
     num_fraudes = df["class"].sum()
-    st.metric("⚠️ Fraudes detectadas", int(num_fraudes))
+    st.metric("⚠️ total fraud detected", int(num_fraudes))
 
 with col3:
     taxa_fraude = 100 * df["class"].mean()
-    st.metric("📉 Taxa de Fraude (%)", f"{taxa_fraude:.3f}%")
+    st.metric("📉 Fraud rate (%)", f"{taxa_fraude:.3f}%")
 
 st.markdown("---")
 
 # Tabs com visualizações
-tab1, tab2, tab3, tab4 = st.tabs(["Dados brutos"," Gráficos", " Tabela de dados", " Métricas dos modelos"])
+tab1, tab2, tab3, tab4 = st.tabs(["Raw data"," Graph", "Display data table", "Modal metrics"])
 
 with tab1:
-    st.subheader("Amostra da camada bronze")
+    st.subheader("Sample from the Bronze layer")
     st.dataframe(ds.head(100), use_container_width=True)
 
 with tab2:
     col_a, col_b = st.columns(2)
 
     with col_a:
-        fig1 = px.histogram(df, x="amount", nbins=50, title="Distribuição dos Valores")
+        fig1 = px.histogram(df, x="amount", nbins=50, title="Value distribution chart")
         st.plotly_chart(fig1, use_container_width=True)
 
     with col_b:
-        fig2 = px.histogram(df, x="class", title="Distribuição das Classes (Fraude vs Não)")
+        fig2 = px.histogram(df, x="class", title="Class Distribution (Fraud vs Non-Fraud)")
         st.plotly_chart(fig2, use_container_width=True)
 
 with tab3:
-    st.subheader("Amostra de Transações")
+    st.subheader("Sample from the transections")
     st.dataframe(df.head(100), use_container_width=True)
 
 with tab4:
