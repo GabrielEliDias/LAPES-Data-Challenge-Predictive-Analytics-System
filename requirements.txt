@@ -4,6 +4,7 @@ numpy
 matplotlib
 seaborn
 scikit-learn
+xgboost == 3.0.2
 jupyter
 pathlib
 #Deep learning
