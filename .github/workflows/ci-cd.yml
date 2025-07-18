@@ -24,245 +24,197 @@ jobs:
       contents: write
 
     steps:
-    - name: Extract branch name
-      id: extract
-      run: |
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        echo "branch=${BRANCH_NAME}" >> $GITHUB_OUTPUT
-        echo "Verificando branch: $BRANCH_NAME"
+      # Extrai o nome da branch
+      - name: Extract branch name
+        id: extract
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          echo "branch=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "Verificando branch: $BRANCH_NAME"
 
-    - name: Validate branch name
-      id: validate
-      run: | 
-        BRANCH_NAME="${{ steps.extract.outputs.branch }}"
-        echo "Branch name: $BRANCH_NAME"
+      # Valida o padrão da branch
+      - name: Validate branch name
+        id: validate
+        run: |
+          BRANCH_NAME="${{ steps.extract.outputs.branch }}"
+          echo "Branch name: $BRANCH_NAME"
 
-        # good pattern:
-        # feature/...
-        # hotfix/...
-        # bugfix/...
-        # release/...
+          if [[ $BRANCH_NAME =~ ^(feature|hotfix|bugfix)\/[A-Z]+-[0-9]+-[a-z0-9-]+$ ]]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+            echo "type=development" >> $GITHUB_OUTPUT
+          elif [[ $BRANCH_NAME =~ ^release\/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+            echo "type=release" >> $GITHUB_OUTPUT
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "type=invalid" >> $GITHUB_OUTPUT
+          fi
 
-        if [[ $BRANCH_NAME =~ ^(feature|hotfix|bugfix)\/[A-Z]+-[0-9]+-[a-z0-9-]+$ ]]; then
-          echo " Branch name follows pattern: $BRANCH_NAME"
-          echo "valid=true" >> $GITHUB_OUTPUT
-          echo "type=development" >> $GITHUB_OUTPUT
-        elif [[ $BRANCH_NAME =~ ^release\/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo " Release branch follows pattern: $BRANCH_NAME"
-          echo "valid=true" >> $GITHUB_OUTPUT
-          echo "type=release" >> $GITHUB_OUTPUT
-        else
-          echo " Branch name does not follow pattern: $BRANCH_NAME"
-          echo "valid=false" >> $GITHUB_OUTPUT
-          echo "type=invalid" >> $GITHUB_OUTPUT
-        fi
-    - name: comment branch validation failure
-      if: steps.validate.outputs.valid == 'false'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const branchName = '${{ steps.extract.outputs.branch }}' || 'unknown-branch';
+      # Comenta se o nome da branch for inválido
+      - name: Comment branch validation failure
+        if: steps.validate.outputs.valid == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const branchName = '${{ steps.extract.outputs.branch }}';
+            const comment = `Nome da branch \`${branchName}\` inválido. Use o padrão: feature/ABC-123-descricao`;
 
-          const comment = `## Name of the Branch is Invalid
-          The branch \`${branchName}\` does not follow the required pattern...
-          `;
-          
-          // create an issue for report of the problem
-          await github.rest.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: `Branch with name invalid: ${branchName}`,
-            body: comment,
-            labels: ['invalid-branch', 'needs-fix']
-          });
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Branch inválida: ${branchName}`,
+              body: comment,
+              labels: ['invalid-branch', 'needs-fix']
+            });
 
-    - name: Fail if branch is invalid
-      if: steps.validate.outputs.valid == 'false'
-      run: |
-        echo "Pipeline is over by the name of the branch"
-        echo "Please, rename the branch with the correct pattern!"
-        exit 1
+      # Cancela pipeline se a branch for inválida
+      - name: Fail if branch is invalid
+        if: steps.validate.outputs.valid == 'false'
+        run: |
+          echo "Pipeline encerrada. Renomeie a branch de acordo com os padrões."
+          exit 1
 
-    - name: Validate Commit Messages
-      uses: wagoid/commitlint-github-action@v5
-      with:
-        configFile: '.commitlintrc.json'
-        failOnWarnings: false
-        helpURL: 'https://github.com/conventional-changelog/commitlint/#what-is-commitlint'
+      # Valida mensagens de commit
+      - name: Validate Commit Messages
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: '.commitlintrc.json'
+          failOnWarnings: false
 
-    - name: Generate Commit Stats
-      id: commit-stats
-      run: |
-        # Análise rápida com uma linha
-        git log --oneline --no-merges origin/main..HEAD | \
-        awk '{if($2~/^feat/) feat++; else if($2~/^fix/) fix++; else other++} 
-             END {print "feat="feat; print "fix="fix; print "other="other}' >> $GITHUB_OUTPUT
+      # Gera estatísticas dos commits
+      - name: Generate Commit Stats
+        id: commit-stats
+        run: |
+          git log --oneline --no-merges origin/main..HEAD | \
+          awk '{if($2~/^feat/) feat++; else if($2~/^fix/) fix++; else other++}
+               END {print "feat="feat; print "fix="fix; print "other="other}' >> $GITHUB_OUTPUT
 
-    - name: Auto Comment on Issues
-      if: failure()
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const stats = {
-            feat: '${{ steps.commit-stats.outputs.feat }}' || 0,
-            fix: '${{ steps.commit-stats.outputs.fix }}' || 0,
-            other: '${{ steps.commit-stats.outputs.other }}' || 0
-          };
-          
-          github.rest.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: `Commit validation failed: ${context.ref}`,
-            body: `## Commit Validation Failed
-            
-            **Stats:** ${stats.feat} features, ${stats.fix} fixes, ${stats.other} others
-            
-            **Fix:** Use conventional commits: \`feat: description\`, \`fix: description\`
-            
-            **Examples:**
-            - \`feat: add user authentication\`
-            - \`fix: resolve login bug\`
-            - \`docs: update README\``,
-            labels: ['invalid-commits']
-          });
+      # Comenta caso haja falha
+      - name: Auto Comment on Issues
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const stats = {
+              feat: '${{ steps.commit-stats.outputs.feat }}',
+              fix: '${{ steps.commit-stats.outputs.fix }}',
+              other: '${{ steps.commit-stats.outputs.other }}'
+            };
 
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Validação de commits falhou em: ${context.ref}`,
+              body: `Estatísticas: ${stats.feat} feat, ${stats.fix} fix, ${stats.other} outros\n\nUse commits convencionais.`,
+              labels: ['invalid-commits']
+            });
 
-    - name: Checkout do código
-      uses: actions/checkout@v3
+      # Checkout do código
+      - name: Checkout do código
+        uses: actions/checkout@v3
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      # Configura ambiente Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        
+      # Instala dependências
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        flake8 src/ --max-line-length=200
+      # Lint com Flake8
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 src/ --max-line-length=200
 
-    - name: Build on imagem Docker
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/lapes-predictive-model:latest .
+      # Build da imagem Docker
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
 
-    - name: Login on Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Login no Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Push image to the Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/${{env.IMAGE_NAME }}:latest
+      # Push para Docker Hub
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-    - name: Cria Pull Request automaticamente com verificação
-      if: steps.validate.outputs.valid == 'true' && github.event_name == 'push'
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const base = 'main';
-          const branchType = '${{ steps.validate.outputs.type }}' || 'undefined';
-          const head = '${{ steps.extract.outputs.branch }}' || 'unknown-branch';
+      # Criação automática de Pull Request
+      - name: Create Pull Request automatically
+        if: steps.validate.outputs.valid == 'true' && github.event_name == 'push'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const base = 'main';
+            const head = '${{ steps.extract.outputs.branch }}';
+            const branchType = '${{ steps.validate.outputs.type }}';
+            let title = '';
+            let body = '';
 
-          let title = '';
-          let body = '';
+            if (branchType === 'development') {
+              const parts = head.split('/')[1].split('-');
+              const taskId = `${parts[0]}-${parts[1]}`;
+              const description = parts.slice(2).join(' ').replace(/-/g, ' ');
 
-          if (branchType === 'development') {
-              title = `Development Branch PR`;
-              body = `This is a PR automatically created for branch: ${head}`;
-          } else if (branchType === 'release') {
-              title = `Release Branch PR`;
-              body = `Release Branch: ${head}`;
-          } else {
-              console.log("Unrecognized branch type.");
-          }
-
-          const compare = await github.rest.repos.compareCommits({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            base,
-            head,
-          });
-
-          if (compare.status !== 200 || compare.data.total_commits === 0) {
-            core.info("ℹ️ Nenhuma diferença entre os branches. PR não será criada.");
-            return;
-          }
-
-          const existingPRs = await github.rest.pulls.list({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            head: `${context.repo.owner}:${head}`,
-            state: 'open'
-          });
-
-          if (existingPRs.data.length > 0) {
-            console.log(`PR already exists for branch ${head}`);
-            return;
-          }
-
-
-          if (branchType === 'development') {
-            const parts = head.split('/')[1].split('-');
-            const taskId = `${parts[0]}-${parts[1]}`;
-            const description = parts.slice(2).join(' ').replace(/-/g, ' ');
-
-            title = `[${taskId}] ${description}`;
-            body = `## description
-
-          This PR implements: ${description}
-          ---
-          *PR automatically created after verification of all tests*
-
-          **Task ID:** ${taskId}`;
+              title = `[${taskId}] ${description}`;
+              body = `## Descrição\n\nEste PR implementa: ${description}\n\n---\nPR criado automaticamente.`;
             } else if (branchType === 'release') {
               const version = head.split('/')[1];
               title = `Release ${version}`;
-              body = `## Release ${version}
+              body = `Checklist:\n- [x] Testes validados\n- [x] Build Docker\n\n---\nPR criado automaticamente.`;
+            }
 
-          ### Checklist for Release:
-          - [x] Verification of commits and branchs names
-          - [x] All tests passed
-          - [x] documentation update
-          - [x] Image Docker updated
+            const compare = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base,
+              head
+            });
 
-          ---
-          *PR of release automatic created*`;
-          }
+            if (compare.status !== 200 || compare.data.total_commits === 0) return;
 
-          const pr = await github.rest.pulls.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title,
-            head,
-            base,
-            body,
-            draft: false
-          });
+            const existing = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${head}`,
+              state: 'open'
+            });
 
-          const labels = branchType === 'development'
-            ? ['enhancement', 'ready-for-review']
-            : ['release', 'ready-for-review'];
+            if (existing.data.length > 0) return;
 
-          await github.rest.issues.addLabels({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: pr.data.number,
-            labels
-          });
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              head,
+              base,
+              body
+            });
 
-    - name: notify success
-      if: success()
-      run: |
-        echo "Pipeline executed successfully!"
+            const labels = branchType === 'development' ? ['enhancement'] : ['release'];
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.data.number,
+              labels
+            });
 
-    - name: notify failure
-      if: failure()
-      run: |
-        echo "Pipeline failed!"
-        echo "Check the logs above to identify the problem"
-        exit 1
+      # Sucesso
+      - name: Notify success
+        if: success()
+        run: echo "Pipeline concluída com sucesso!"
+
+      # Falha
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "Pipeline falhou. Verifique os logs."
+          exit 1
