@@ -212,7 +212,7 @@ jobs:
         if: success()
         run: echo "Pipeline concluída com sucesso!"
 
-      # Falha
+      # Falhou
       - name: Notify failure
         if: failure()
         run: |
