@@ -36,7 +36,6 @@ data/diamond/
 data/datalake/
 
 # Models - to avoid committing large trained model files
-models/
 
 # Docker
 *.dockerfile
