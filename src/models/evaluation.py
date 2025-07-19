@@ -1,7 +1,9 @@
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, confusion_matrix, roc_curve, auc
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 import plotly.express as px
+
 
 def get_metrics(y_true, y_pred):
     return {
@@ -10,6 +12,7 @@ def get_metrics(y_true, y_pred):
         "recall": recall_score(y_true, y_pred),
         "f1": f1_score(y_true, y_pred),
     }
+
 
 def get_confusion_figure(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
@@ -35,6 +38,7 @@ def get_confusion_figure(y_true, y_pred):
     ax.set_facecolor('#0e1117')  # fundo da área da matriz
 
     return fig
+
 
 def get_roc_curve(y_true, y_pred):
     fpr, tpr, thresholds = roc_curve(y_true, y_pred)
