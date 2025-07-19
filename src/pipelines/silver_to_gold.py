@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
@@ -31,8 +30,8 @@ def prepare_gold_data(silver_path: str, gold_dir: str):
     X_test['amount_scaled'] = amount_scaler.transform(X_test[['amount']])
 
     # Retirar colunas não escaladas
-    X_train = X_train.drop(columns=['time','amount'])
-    X_test = X_test.drop(columns=['time','amount'])
+    X_train = X_train.drop(columns=['time', 'amount'])
+    X_test = X_test.drop(columns=['time', 'amount'])
 
     # Criar diretório de saída
     gold_path = Path(gold_dir)
