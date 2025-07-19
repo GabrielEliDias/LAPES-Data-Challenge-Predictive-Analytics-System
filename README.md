@@ -48,18 +48,17 @@ This repository contains the complete end-to-end solution developed for the **LA
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
-|----------------------------------------------------------------------|
-| data/ # Bronze → Silver → Gold                                       |
-| notebooks/ # EDA, ML, and DL notebooks                               |
-| src/ # ELT scripts, preprocessing, and model training                |
-| sql/ # SQL scripts (DDL, DML)                                        |
-| app/ # Streamlit dashboard app                                       |
-| requirements.txt # Required Python packages                          |
-| README.md # Project documentation                                    |
-
----
+├── data/ # Raw and processed data (Bronze → Silver → Gold → Diamond)
+├── notebooks/ # Jupyter notebooks for EDA, ML, and DL
+├── src/ # Source code for ELT, preprocessing, and modeling
+├── sql/
+│ ├── DDL/ # Database schema definitions
+│ └── DML/ # Data manipulation scripts
+├── app/ # Streamlit dashboard application
+├── requirements.txt # List of project dependencies
+└── README.md # Project documentation (you are here)
 
 ## Pipeline Overview
 
@@ -87,9 +86,9 @@ This repository contains the complete end-to-end solution developed for the **LA
 
 ---
 
-## 📘 Reproducibility & Setup
+## Reproducibility & Setup
 
-### ⚙️ Installation
+### Installation
 
 Clone the repository and install dependencies in a virtual environment:
 
