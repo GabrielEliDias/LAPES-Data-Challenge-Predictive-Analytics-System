@@ -48,9 +48,9 @@ This repository contains the complete end-to-end solution developed for the **LA
 
 ---
 
-## 📁 Project Structure
-
-├── data/ # Raw and processed data (Bronze → Silver → Gold → Diamond)
+ ## 📁 Project Structure
+```
+├── data/ # Raw and processed data (Bronze → Silver → Gold)
 ├── notebooks/ # Jupyter notebooks for EDA, ML, and DL
 ├── src/ # Source code for ELT, preprocessing, and modeling
 ├── sql/
@@ -59,6 +59,7 @@ This repository contains the complete end-to-end solution developed for the **LA
 ├── app/ # Streamlit dashboard application
 ├── requirements.txt # List of project dependencies
 └── README.md # Project documentation (you are here)
+```
 
 ## Pipeline Overview
 
