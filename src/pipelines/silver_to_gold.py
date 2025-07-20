@@ -5,7 +5,7 @@ from sklearn.preprocessing import RobustScaler, MinMaxScaler
 import joblib
 
 
-def prepare_gold_data(silver_path: str, gold_dir: str):
+def silver_to_gold(silver_path: str, gold_dir: str):
     # Carregar os dados da camada Silver
     df = pd.read_parquet(silver_path)
 
@@ -47,3 +47,9 @@ def prepare_gold_data(silver_path: str, gold_dir: str):
     joblib.dump(time_scaler, gold_path / "time_scaler.pkl")
     joblib.dump(amount_scaler, gold_path / "amount_scaler.pkl")
     print("Camada Gold criada com sucesso!")
+
+if __name__ == "__main__":
+    silver_path = Path.cwd() / 'data' / 'silver' / 'creditcard_fraud_cleaned.parquet'
+    gold_dir = Path.cwd() / 'data' / 'gold'
+
+    silver_to_gold(silver_path, gold_dir)
