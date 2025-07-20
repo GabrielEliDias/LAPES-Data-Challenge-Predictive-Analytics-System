@@ -8,9 +8,8 @@ xgboost == 3.0.2
 jupyter
 pathlib
 #Deep learning
-# torch
-# tensorflow
-#Dashboard
+tensorflow
+#Plotting
 streamlit
 plotly
 dash
