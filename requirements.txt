@@ -4,7 +4,7 @@ numpy
 matplotlib
 seaborn
 scikit-learn
-xgboost == 3.0.2
+xgboost==1.7.6
 jupyter
 pathlib
 #Deep learning
@@ -14,3 +14,5 @@ pathlib
 streamlit
 plotly
 dash
+psycopg2-binary
+joblib
