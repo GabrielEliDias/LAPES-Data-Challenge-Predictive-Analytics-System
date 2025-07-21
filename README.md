@@ -93,11 +93,54 @@ This repository contains the complete end-to-end solution developed for the **LA
 
 Clone the repository and install dependencies in a virtual environment:
 
-```bash
 git clone https://github.com/your-username/lapes-predictive-analytics.git
 cd lapes-predictive-analytics
-
+```
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+# Linux/macOS
+python -m venv .venv
+source .venv/bin/activate
+
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+```
+# Install the requiriments for the Project
+pip install -r requiriments.txt
+
+# Configurar o Banco de Dados
+Instale o PostgreSQL em sua máquina (caso ainda não tenha).
+
+Crie um banco de dados chamado lapes com:
+
+Usuário: postgres
+
+Senha: postgres
+
+Verifique se o serviço do PostgreSQL está rodando corretamente.
+
+Ajuste as credenciais no projeto caso esteja usando configurações diferentes.
+
+# Executar o Dashboard e Processar os Dados
+Execute o script principal:
+```
+
+streamlit run  app/dashboard.py
+
+```
+Antes de rodar esse comando vc deve:
+
+1. Executar os scripts de ETL (bronze → silver → gold)
+
+2. Criar/popular as tabelas no banco lapes
+
+3. Executar scripts SQL automaticamente
+
+Para que após isso possa rodar o streamlit no seu device
+
+Abrir o dashboard com interface visual via Streamlit
+
 
