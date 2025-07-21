@@ -93,14 +93,13 @@ This repository contains the complete end-to-end solution developed for the **LA
 
 Clone the repository and install dependencies in a virtual environment:
 
-```bash
 git clone https://github.com/your-username/lapes-predictive-analytics.git
 cd lapes-predictive-analytics
 
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
+```
 # Linux/macOS
 python -m venv .venv
 source .venv/bin/activate
@@ -111,38 +110,54 @@ python -m venv .venv
 
 # Install the requiriments for the Project
 pip install -r requiriments.txt
-
-# Configurar o Banco de Dados
-Instale o PostgreSQL em sua máquina (caso ainda não tenha).
-
-Crie um banco de dados chamado lapes com:
-
-Usuário: postgres
-
-Senha: postgres
-
-Verifique se o serviço do PostgreSQL está rodando corretamente.
-
-Ajuste as credenciais no projeto caso esteja usando configurações diferentes.
-
-# Executar o Dashboard e Processar os Dados
-Execute o script principal:
 ```
-streamlit run  app/dashboard.py
+# Configure the Database
+Install PostgreSQL if not already installed.
 
+Create a database named lapes with:
+
+User: postgres
+
+Password: postgres
+
+Ensure the PostgreSQL service is running.
+
+If you’re using different credentials, update them in the project accordingly.
+
+# Entry Point for Execution
+You can run the entire pipeline locally using the main.py script.
+
+This script implements the following steps:
+
+1. Locate the raw CSV dataset (creditcard.csv) in one of the following locations:
+
+	- Project root
+
+	- data/bronze/
+
+	- If not found, the script exits with an error.
+
+	- Ensure the data/bronze folder exists and copy/move the CSV there if needed.
+
+2. Run the ELT pipeline in sequence:
+
+	- Bronze → Silver
+
+	- Silver → Gold
+
+	- Persist trained ML/DL models into the database
+
+	- Apply all SQL scripts (DDL and DML) including:
+
+	- Table creation
+
+	- Grant permissions
+
+	- Triggers
+
+# Launch the Streamlit dashboard at app/dashboard.py.
+
+To execute:
 ```
-Antes de rodar esse comando vc deve:
-
-1. Executar os scripts de ETL (bronze → silver → gold)
-
-2. Criar/popular as tabelas no banco lapes
-
-3. Executar scripts SQL automaticamente
-
-After completing these steps, the Streamlit dashboard will open in your browser and display:
-
-- Processed data from all pipeline layers
-
-- Model metrics and comparisons
-
-- Visualizations and interactive charts
+python main.py
+```
