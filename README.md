@@ -93,11 +93,71 @@ This repository contains the complete end-to-end solution developed for the **LA
 
 Clone the repository and install dependencies in a virtual environment:
 
-```bash
 git clone https://github.com/your-username/lapes-predictive-analytics.git
 cd lapes-predictive-analytics
 
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+```
+# Linux/macOS
+python -m venv .venv
+source .venv/bin/activate
 
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# Install the requiriments for the Project
+pip install -r requiriments.txt
+```
+# Configure the Database
+Install PostgreSQL if not already installed.
+
+Create a database named lapes with:
+
+User: postgres
+
+Password: postgres
+
+Ensure the PostgreSQL service is running.
+
+If you’re using different credentials, update them in the project accordingly.
+
+# Entry Point for Execution
+You can run the entire pipeline locally using the main.py script.
+
+This script implements the following steps:
+
+1. Locate the raw CSV dataset (creditcard.csv) in one of the following locations:
+
+	- Project root
+
+	- data/bronze/
+
+	- If not found, the script exits with an error.
+
+	- Ensure the data/bronze folder exists and copy/move the CSV there if needed.
+
+2. Run the ELT pipeline in sequence:
+
+	- Bronze → Silver
+
+	- Silver → Gold
+
+	- Persist trained ML/DL models into the database
+
+	- Apply all SQL scripts (DDL and DML) including:
+
+	- Table creation
+
+	- Grant permissions
+
+	- Triggers
+
+# Launch the Streamlit dashboard at app/dashboard.py.
+
+To execute:
+```
+python main.py
+```
