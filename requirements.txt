@@ -1,18 +1,16 @@
 #Básico
-pandas
-numpy
-matplotlib
-seaborn
-scikit-learn
-xgboost==1.7.6
-jupyter
-pathlib
+
+pandas==2.3.1
+numpy==2.3.1
+matplotlib==3.10.3
+seaborn==0.13.2
+scikit-learn==1.7.1
+xgboost==3.0.2
+jupyter==1.1.1
+pathlib==1.0.1
 #Deep learning
-# torch
-# tensorflow
-#Dashboard
-streamlit
-plotly
-dash
-psycopg2-binary
-joblib
+tensorflow
+#Plotting
+streamlit==1.47.0
+plotly==6.2.0
+dash==3.1.1

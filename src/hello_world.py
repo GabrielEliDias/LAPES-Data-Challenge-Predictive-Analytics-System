@@ -1,3 +1,3 @@
-import numpy as np
-
-print(np.arange(10))
+import matplotlib
+print(matplotlib.__version__)
+print(matplotlib.__file__)
