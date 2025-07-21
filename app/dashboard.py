@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 import joblib
+import psycopg2
 
 from src.models.evaluation import get_metrics, get_confusion_figure, get_roc_curve
 
@@ -19,24 +20,53 @@ st.set_page_config(
 # Título
 st.title("Fraud detection system on credit card")
 
+def load_from_db(table: str) -> pd.DataFrame:
+    conn = psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASS")
+    )
+    df = pd.read_sql(f"SELECT * FROM {table}", conn)
+    conn.close()
+    return df
+
 # Lê os dados da camada gold
 @st.cache_data
 def load_data():
-    model_rf = joblib.load("models/final_rf_model.pkl")
-    model_xg = joblib.load("models/final_XGBoost_model.pkl")
-    model_lr = joblib.load("models/logistic_regression_baseline.pkl")
+    model_dp = joblib.load("models/final_dp_model.pkl")
+    model_rf  = joblib.load("models/final_rf_model.pkl")
+    model_xg  = joblib.load("models/final_XGBoost_model.pkl")
+    model_lr  = joblib.load("models/logistic_regression_baseline.pkl")
 
-    x_test = pd.read_parquet("data/gold/X_test.parquet")
-    y_test = pd.read_parquet("data/gold/y_test.parquet")
+    x_test   = pd.read_parquet("data/gold/X_test.parquet")
+    y_test   = pd.read_parquet("data/gold/y_test.parquet")
 
+    df = pd.read_csv("data/silver/creditcard_fraud_cleaned.parquet")
+
+    amount_scaler = joblib.load("data/gold/amount_scaler.pkl")
+    time_scaler   = joblib.load("data/gold/time_scaler.pkl")
+
+    # Carrega Bronze só para mostrar o sample cru
     ds = pd.read_csv("data/bronze/creditcard.csv")
-    df   = pd.read_parquet("data/gold/X_test.parquet")
-    y = pd.read_parquet("data/gold/y_test.parquet")
-    df["class"] = y
-    return model_rf,model_xg, model_lr, x_test, y_test, df ,ds
+
+    df_diamond = load_from_db("diamond.vw_transactions_overview")
+
+    return (
+        model_dp,
+        model_rf,
+        model_xg,
+        model_lr,
+        x_test,
+        y_test,
+        df,
+        ds,
+        df_diamond
+    )
 
 # Carregando os dados
-model_rf,model_xg, model_lr, x_test, y_test ,df, ds = load_data()
+deep_model, model_rf, model_xg, model_lr, x_test, y_test, df,ds , df_diamond_sql = load_data()
 
 # Métricas em colunas
 col1, col2, col3 = st.columns(3)
@@ -55,7 +85,14 @@ with col3:
 st.markdown("---")
 
 # Tabs com visualizações
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Raw data"," Graph", "Display data table", "Machine learning metrics", "Deep learning metrics"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Raw data",
+    " Graph",
+    "Display data table",
+    "Machine learning metrics",
+    "Deep learning metrics",
+    "Diamond Layer (SQL)"
+])
 
 with tab1:
     st.subheader("Sample from the Bronze layer")
@@ -159,4 +196,40 @@ with tab4:
         fig_roc = get_roc_curve(y_test, y_pred_xg)
         st.plotly_chart(fig_roc, caption="ROC curve for the XGBoost model", use_container_width=True)
 with tab5:
-    st.subheader("Deep learning metrics")
+    with tab5:
+        st.subheader(" Deep Learning - Métricas")
+
+        # Copiando dados para evitar modificar diretamente
+        x_dl = x_test.copy()
+
+        # Drop das colunas originais
+        X_dl_input = x_dl.drop(columns=["time", "amount"])
+
+        # Predição com o modelo deep learning
+        y_pred_dl_proba = deep_model.predict(X_dl_input)
+        y_pred_dl = (y_pred_dl_proba > 0.5).astype(int).flatten()
+
+        # Métricas
+        metrics_dl = get_metrics(y_test, y_pred_dl)
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Accuracy", f"{metrics_dl['accuracy'] * 100:.2f}%")
+        col2.metric("Precision", f"{metrics_dl['precision'] * 100:.2f}%")
+        col3.metric("Recall", f"{metrics_dl['recall'] * 100:.2f}%")
+        col4.metric("F1-score", f"{metrics_dl['f1'] * 100:.2f}%")
+
+        st.subheader("Confusion figure")
+        fig_cm = get_confusion_figure(y_test, y_pred_dl)
+        st.plotly_chart(fig_cm, use_container_width=True)
+
+        st.subheader("Curve ROC")
+        fig_roc = get_roc_curve(y_test, y_pred_dl_proba)
+        st.plotly_chart(fig_roc, use_container_width=True)
+
+with tab6:
+    st.subheader("Data loaded directly from PostgreSQL")
+    st.dataframe(df_diamond_sql.head(100), use_container_width=True)
+    st.markdown(
+        f"Total rows in SQL: **{len(df_diamond_sql):,}**\n\n" +
+        "Showing the view `diamond.vw_transactions_overview` directly from the database."
+    )
