@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: lapes
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./SQL:/docker-entrypoint-initdb.d/SQL
+
+  etl:
+    build: .
+    depends_on:
+      - db
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./src:/app/src
+      - ./requirements.txt:/app/requirements.txt
+    entrypoint: >
+      bash -c "
+        sleep 10 &&
+        python src/bronze_to_silver.py &&
+        python src/silver_to_gold.py &&
+        python src/pipelines/persist_existing_models.py
+      "
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: lapes
+      DB_USER: postgres
+      DB_PASS: postgres
+
+  streamlit:
+    image: python:3.9-slim
+    working_dir: /app
+    depends_on:
+      - db
+      - etl
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "8501:8501"
+    entrypoint: >
+      sh -c "
+        pip install --no-cache-dir -r requirements.txt &&
+        streamlit run app/dashboard.py --server.address=0.0.0.0 --server.port=8501
+      "
+
+volumes:
+  pgdata:
